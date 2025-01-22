@@ -1,6 +1,12 @@
-const { readdir, mkdir, copyFile, writeFile } = require('node:fs/promises');
+const {
+  readdir,
+  mkdir,
+  copyFile,
+  writeFile,
+  readFile,
+} = require('node:fs/promises');
 const pathFs = require('path');
-const { createReadStream,  } = require('node:fs');
+const { createReadStream } = require('node:fs');
 
 let pathToRoot = '';
 
@@ -88,9 +94,9 @@ async function compile(path) {
     for (const file of files) {
       await compileFiles(file, data, path);
     }
-    const compiledFilePath = pathFs.join(path, 'style.css');
+    const compiledFilePath = pathFs.join(pathToRoot, 'style.css');
     await fillFile(compiledFilePath, data);
-    console.log(`Made ${compiledFilePath} in ${path}`);
+    console.log(`Made ${compiledFilePath} in ${pathToRoot}`);
   } catch (error) {
     err(error);
   }
@@ -108,7 +114,11 @@ async function fillFile(compiledFilePath, data) {
 
 async function compileFiles(file, data, dirPath) {
   try {
-    if (file.isFile() && pathFs.extname(file.name).toLowerCase() === '.css' && file.name !== 'style.css') {
+    if (
+      file.isFile() &&
+      pathFs.extname(file.name).toLowerCase() === '.css' &&
+      file.name !== 'style.css'
+    ) {
       const filePath = pathFs.join(dirPath, file.name);
       const stream = createReadStream(filePath);
       for await (const chunk of stream) {
@@ -121,14 +131,33 @@ async function compileFiles(file, data, dirPath) {
   }
 }
 
+async function replacePlaceholders(templatePath, componentsPath) {
+  try {
+    let templateContent = await readFile(templatePath, 'utf8');
+    const files = await readFromDir([], componentsPath);
+    for await (const file of files) {
+      const filePath = pathFs.join(componentsPath, file.name);
+      const componentContent = await readFile(filePath, 'utf8');
+      const placeholder = pathFs.parse(filePath).name;
+      const regex = new RegExp(`{{${placeholder}}}`, 'g');
+      templateContent = templateContent.replace(regex, componentContent);
+    }
+    await writeFile(templatePath, templateContent);
+    log(`All files copied to dir ${pathTo}`);
+  } catch (error) {}
+}
+
 (async () => {
   try {
     pathToRoot = pathFs.join(__dirname, 'project-dist');
     await newDir(pathToRoot);
-    const dirsToCopy = ['assets', 'styles'];
+    const dirsToCopy = ['assets', 'styles', 'template.html'];
     await copy(dirsToCopy, __dirname, pathToRoot);
     const pathToCompileDir = pathFs.join(pathToRoot, 'styles');
     await compile(pathToCompileDir);
+    const componentsPath = pathFs.join(__dirname, 'components');
+    const templatePath = pathFs.join(pathToRoot, 'template.html');
+    await replacePlaceholders(templatePath, componentsPath);
   } catch (error) {
     err(error);
   }
