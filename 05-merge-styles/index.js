@@ -2,7 +2,6 @@ const { readdir } = require('node:fs/promises');
 const fs = require('fs');
 const path = require('path');
 const { pipeline } = require('node:stream');
-const { error } = require('node:console');
 
 async function readDir(dirPath) {
   try {
