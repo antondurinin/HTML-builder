@@ -5,8 +5,6 @@ const {
   writeFile,
   readFile,
   rm,
-  rmdir,
-  access,
 } = require('node:fs/promises');
 const pathFs = require('path');
 const { createReadStream } = require('node:fs');
@@ -109,7 +107,7 @@ async function fillFile(compiledFilePath, data) {
   try {
     const content = Buffer.concat(data);
     await writeFile(compiledFilePath, content);
-   log(`Filled ${compiledFilePath}`);
+    log(`Filled ${compiledFilePath}`);
   } catch (error) {
     err(error);
   }
@@ -144,16 +142,19 @@ async function replacePlaceholders(templatePath, indexPath, componentsPath) {
       const placeholder = pathFs.parse(filePath).name;
       const regex = new RegExp(`{{${placeholder}}}`, 'g');
       templateContent = templateContent.replace(regex, componentContent);
-    }indexPath
+    }
+    indexPath;
     await writeFile(indexPath, templateContent);
     log(`All files copied to dir ${pathTo}`);
   } catch (error) {}
 }
-   async function removeRoot(pathToRoot) {
-     if ( await access(pathToRoot)) {
-      await rmdir(pathToRoot);    
-     }
-   }
+async function removeRoot(pathToRoot) {
+  try {
+    await rm(pathToRoot, { recursive: true, force: true });
+  } catch (error) {
+    err(error);
+  }
+}
 (async () => {
   try {
     pathToRoot = pathFs.join(__dirname, 'project-dist');
