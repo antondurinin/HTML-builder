@@ -11,7 +11,7 @@ const { createReadStream } = require('node:fs');
 let pathToRoot = '';
 
 function log(msg) {
-  console.log(msg);
+  // console.log(msg);
 }
 
 function err(msg) {
@@ -96,7 +96,7 @@ async function compile(path) {
     }
     const compiledFilePath = pathFs.join(pathToRoot, 'style.css');
     await fillFile(compiledFilePath, data);
-    console.log(`Made ${compiledFilePath} in ${pathToRoot}`);
+    log(`Made ${compiledFilePath} in ${pathToRoot}`);
   } catch (error) {
     err(error);
   }
@@ -106,7 +106,7 @@ async function fillFile(compiledFilePath, data) {
   try {
     const content = Buffer.concat(data);
     await writeFile(compiledFilePath, content);
-    console.log(`Filled ${compiledFilePath}`);
+   log(`Filled ${compiledFilePath}`);
   } catch (error) {
     err(error);
   }
@@ -131,7 +131,7 @@ async function compileFiles(file, data, dirPath) {
   }
 }
 
-async function replacePlaceholders(templatePath, componentsPath) {
+async function replacePlaceholders(templatePath, indexPath, componentsPath) {
   try {
     let templateContent = await readFile(templatePath, 'utf8');
     const files = await readFromDir([], componentsPath);
@@ -141,8 +141,8 @@ async function replacePlaceholders(templatePath, componentsPath) {
       const placeholder = pathFs.parse(filePath).name;
       const regex = new RegExp(`{{${placeholder}}}`, 'g');
       templateContent = templateContent.replace(regex, componentContent);
-    }
-    await writeFile(templatePath, templateContent);
+    }indexPath
+    await writeFile(indexPath, templateContent);
     log(`All files copied to dir ${pathTo}`);
   } catch (error) {}
 }
@@ -151,13 +151,13 @@ async function replacePlaceholders(templatePath, componentsPath) {
   try {
     pathToRoot = pathFs.join(__dirname, 'project-dist');
     await newDir(pathToRoot);
-    const dirsToCopy = ['assets', 'styles', 'template.html'];
-    await copy(dirsToCopy, __dirname, pathToRoot);
-    const pathToCompileDir = pathFs.join(pathToRoot, 'styles');
+    await copy(['assets'], __dirname, pathToRoot);
+    const pathToCompileDir = pathFs.join(__dirname, 'styles');
     await compile(pathToCompileDir);
     const componentsPath = pathFs.join(__dirname, 'components');
-    const templatePath = pathFs.join(pathToRoot, 'template.html');
-    await replacePlaceholders(templatePath, componentsPath);
+    const templatePath = pathFs.join(__dirname, 'template.html');
+    const indexPath = pathFs.join(pathToRoot, 'index.html');
+    await replacePlaceholders(templatePath, indexPath, componentsPath);
   } catch (error) {
     err(error);
   }
